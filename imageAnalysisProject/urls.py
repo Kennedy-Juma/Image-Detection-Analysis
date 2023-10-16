@@ -15,16 +15,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic.base import TemplateView
+from django.views.generic.base import TemplateView, RedirectView
 
 urlpatterns = [
-    path('', include('image_analysis.urls')),
     path('admin/', admin.site.urls),
+    path('', include('image_analysis.urls')),
+    re_path(r'^$', RedirectView.as_view(url='/upload/', permanent=True), name='index'),
+
     #path("accounts/", include("django.contrib.auth.urls")),
     #path('', TemplateView.as_view(template_name='index.html'), name='index'),
+    #path('upload/', TemplateView.as_view(template_name='image_analysis/templates/upload_image.html'), name='upload_view'),
 ]
 
 if settings.DEBUG:
