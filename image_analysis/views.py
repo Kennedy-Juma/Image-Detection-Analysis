@@ -1,4 +1,5 @@
 # views.py
+import os
 
 import cv2
 import pytesseract
@@ -7,11 +8,8 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from .forms import ImageUploadForm
 from .models import UploadedImage
-from django.views.decorators.csrf import csrf_exempt
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 from googletrans import Translator
-import json
+
 
 # Calculate the contrast ratio between two colors
 def calculate_contrast_ratio(color1, color2):
@@ -112,6 +110,9 @@ def upload_image(request):
                 analysis_result = analyze_logo(uploaded_file.file.path, target_language)
 
                 analysis_results.append(analysis_result)
+
+                # Remove the uploaded image file after analysis
+                os.remove(uploaded_file.file.path)
 
             return render(request, 'image_analysis/upload_image.html', {'results': analysis_results})
         else:
