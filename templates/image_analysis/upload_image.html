@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Color and Text Detector</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.debug.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0;
+            position: relative;
+        }
+        .header h2 {
+            margin: 0;
+        }
+        .header a {
+            position: absolute;
+            top: 50%;
+            right: 20px; /* Adjust the right margin as needed */
+            transform: translateY(-50%);
+            text-decoration: none;
+            color: #fff;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            text-align: center;
+        }
+        .upload-btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .upload-btn:hover {
+            background-color: #0056b3;
+        }
+        .color-swatch {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #333;
+            margin: 20px auto;
+        }
+        .result {
+            text-align: center;
+            margin-top: 20px;
+        }
+        strong {
+            color: #333;
+        }
+        /* Add your custom styling here */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Image Color and Text Detector</h1>
+        </div>
+
+        {% for result in results %}
+        <div class="color-swatch" style="background-color: {{ result.average_color }}"></div>
+
+        <div class="result">
+            <p id="1"><strong>Detected Color:</strong> {{ result.average_color }} ({{ result.color_name }})</p>
+            <p id="2"><strong>Detected Text:</strong> {{ result.detected_text }}</p>
+            <p id="3"><strong>Translated Text:</strong> {{ result.translated_text }}</p>
+            <p id="4"><strong>Contrast Ratio:</strong> {{ result.contrast_ratio }}</p>
+            <p id="5"><strong>Contrast Level:</strong> {{ result.contrast_level }}</p>
+        </div>
+        {% endfor %}
+
+        <div class="result">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" name="images" accept="image/*" multiple required>
+                <!-- Add a dropdown for selecting the target language -->
+                <label for="target_language">Target Language:</label>
+                <select name="target_language" id="target_language">
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="ar">Arabic</option>
+                    <option value="hi">Hindi (Indian)</option>
+                    <!-- Add more language options as needed -->
+                </select>
+                <button class="upload-btn" type="submit">Detect Colour and Text</button>
+            </form>
+        </div>
+
+        <div class="result">
+            <label><input type="checkbox" id="includeColor" checked> Include Detected Color</label>
+            <label><input type="checkbox" id="includeText" checked> Include Detected Text</label>
+            <label><input type="checkbox" id="includeTranslatedText" checked> Include Translated Text</label>
+            <label><input type="checkbox" id="includeContrastRatio" checked> Include Contrast Ratio</label>
+            <label><input type="checkbox" id="includeContrastLevel" checked> Include Contrast Level</label>
+        </div>
+    </div>
+
+    <div class="result" style="margin-top: 20px;">
+        <!-- Add buttons for downloading PDF, CSV, and TXT files -->
+        <button class="download-btn" id="downloadPdfButton">Download PDF</button>
+        <button class="download-btn" id="downloadCsvButton">Download CSV</button>
+        <button class="download-btn" id="downloadTxtButton">Download TXT</button>
+    </div>
+
+    <script>
+        function downloadTextFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        }
+
+        function getSelectedContent() {
+            const includeColor = document.getElementById('includeColor').checked;
+            const includeText = document.getElementById('includeText').checked;
+            const includeTranslatedText = document.getElementById('includeTranslatedText').checked;
+            const includeContrastRatio = document.getElementById('includeContrastRatio').checked;
+            const includeContrastLevel = document.getElementById('includeContrastLevel').checked;
+
+            let content = '';
+
+            if (includeColor) {
+                content += document.getElementById('1').textContent + '\n';
+            }
+            if (includeText) {
+                content += document.getElementById('2').textContent + '\n';
+            }
+            if (includeTranslatedText) {
+                content += document.getElementById('3').textContent + '\n';
+            }
+            if (includeContrastRatio) {
+                content += document.getElementById('4').textContent + '\n';
+            }
+            if (includeContrastLevel) {
+                content += document.getElementById('5').textContent + '\n';
+            }
+
+            return content;
+        }
+
+        document.getElementById('downloadPdfButton').addEventListener('click', function () {
+            const doc = new jsPDF();
+            const selectedContent = getSelectedContent();
+            doc.text(selectedContent, 10, 10);
+            doc.save('analysis_report.pdf');
+        });
+
+        document.getElementById('downloadCsvButton').addEventListener('click', function () {
+        const selectedContent = getSelectedContent();
+        const csvContent = `"Selected Content"\n"${selectedContent.replace(/\n/g, ' ')}"`;
+        downloadTextFile(csvContent, 'analysis_report.csv', 'text/csv');
+    });
+
+        document.getElementById('downloadTxtButton').addEventListener('click', function () {
+        const selectedContent = getSelectedContent();
+        downloadTextFile(selectedContent, 'analysis_report.txt', 'text/plain');
+    });
+    </script>
+</body>
+</html>
